@@ -100,13 +100,19 @@ report.export_json("compliance_report.json")
 
 ```bash
 pip install -e ".[dev,api]"
-uvicorn rtaas.api:app --reload
+./run_dashboard.sh        # or: uvicorn rtaas.api:app --reload
 ```
 
-Then open `http://localhost:8000` for a minimal dashboard: kick off an
-evaluation, watch past runs, and inspect severity distribution and
-compliance gaps for a selected run. `POST /evaluate`, `GET /reports`, and
-`GET /reports/{run_id}` are also usable directly.
+Then open **`http://localhost:8000/` in a browser** for a minimal
+dashboard: kick off an evaluation, watch past runs, and inspect severity
+distribution and compliance gaps for a selected run. `POST /evaluate`,
+`GET /reports`, and `GET /reports/{run_id}` are also usable directly.
+
+> Open the app via that `http://` URL — never open
+> `src/rtaas/static/dashboard.html` directly as a local file. Its
+> `fetch()` calls are relative and need to be served from the running
+> app's origin; loaded as a bare file they resolve against `file://` and
+> fail.
 
 ---
 

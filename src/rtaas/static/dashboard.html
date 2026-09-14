@@ -131,6 +131,20 @@
   </div>
 
 <script>
+if (location.protocol === "file:") {
+  document.body.innerHTML = `
+    <div class="panel" style="max-width:560px;margin:60px auto;">
+      <h1 style="margin-top:0;">This page must be served, not opened as a file</h1>
+      <p class="sub">You opened this dashboard via <code>file://</code>, so its API calls
+      (<code>/evaluate</code>, <code>/reports</code>) resolve against the file system instead
+      of the backend and fail with a 403.</p>
+      <p class="sub">From the repo root, run:</p>
+      <pre style="background:#0d0f16;border:1px solid var(--border);border-radius:6px;padding:10px;overflow-x:auto;">./run_dashboard.sh</pre>
+      <p class="sub">then open <strong>http://localhost:8000/</strong> in your browser.</p>
+    </div>`;
+  throw new Error("dashboard opened via file:// — see on-page instructions");
+}
+
 const sevColor = { CRITICAL: "var(--critical)", HIGH: "var(--high)", MEDIUM: "var(--medium)", LOW: "var(--low)", PASS: "var(--pass)" };
 
 async function fetchJSON(url, opts) {
