@@ -14,8 +14,8 @@ Quick start:
     print(report.severity_summary())
 """
 
-from rtaas.evaluator import Evaluator
 from rtaas.attack_engine.library import AttackProfile
+from rtaas.evaluator import Evaluator
 
 __all__ = ["Evaluator", "AttackProfile"]
 __version__ = "0.1.0"

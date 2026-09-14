@@ -9,7 +9,6 @@ Usage:
 
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
@@ -44,8 +43,8 @@ if _HAS_TYPER:
         mock: bool = typer.Option(False, "--mock", help="Use mock target (no API calls)"),
     ) -> None:
         """Run a red-team evaluation against a target LLM."""
-        from rtaas.evaluator import Evaluator
         from rtaas.attack_engine.library import AttackProfile
+        from rtaas.evaluator import Evaluator
 
         if mock:
             target_url = "http://mock.local/v1/chat/completions"
@@ -60,7 +59,7 @@ if _HAS_TYPER:
 
         frameworks = [f.strip() for f in compliance.split(",") if f.strip()]
 
-        console.print(f"\n[bold]RTaaS Evaluation[/bold]")
+        console.print("\n[bold]RTaaS Evaluation[/bold]")
         console.print(f"Target:  {target_url}")
         console.print(f"Profile: {prof.value}  |  Max attacks: {max_attacks}")
         console.print(f"Frameworks: {frameworks}\n")

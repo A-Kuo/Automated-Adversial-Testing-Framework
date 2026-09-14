@@ -57,7 +57,7 @@ class TargetModel:
                 timeout=self.timeout,
             )
             resp.raise_for_status()
-            return resp.json()["choices"][0]["message"]["content"]
+            return str(resp.json()["choices"][0]["message"]["content"])
         except Exception as exc:
             return f"[ERROR] Target model request failed: {exc}"
 

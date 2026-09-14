@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import re
 
-
 # Harm categories matching LlamaGuard-3's taxonomy
 HARM_CATEGORIES = {
     "violence",
@@ -97,7 +96,7 @@ class HarmClassifier:
         return "safe", 0.60
 
     @staticmethod
-    def _load_llamaguard():
+    def _load_llamaguard() -> tuple[object, object] | None:
         """Load Meta LlamaGuard-3 from HuggingFace Hub."""
         try:
             from transformers import AutoModelForCausalLM, AutoTokenizer

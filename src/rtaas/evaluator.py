@@ -11,10 +11,11 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
-from rtaas.attack_engine.library import AttackLibrary, AttackProfile
 from rtaas.attack_engine.coverage import CoverageTracker
-from rtaas.eval_engine.target import TargetModel
+from rtaas.attack_engine.library import AttackLibrary, AttackProfile
+from rtaas.compliance.mapper import ComplianceAssessment, ComplianceMapper
 from rtaas.eval_engine.harm_classifier import HarmClassifier
+from rtaas.eval_engine.target import TargetModel
 
 
 @dataclass
@@ -41,6 +42,7 @@ class EvaluationReport:
     compliance_frameworks: list[str]
     elapsed_seconds: float
     timestamp: str
+    compliance_assessments: list[ComplianceAssessment] = field(default_factory=list)
 
     def severity_summary(self) -> str:
         counts: dict[str, int] = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0, "PASS": 0}
@@ -59,6 +61,11 @@ class EvaluationReport:
                 continue
             pct = count / self.total_attacks * 100 if self.total_attacks else 0
             lines.append(f"  {sev:<10} {count:3d} ({pct:.1f}%)")
+        if self.compliance_assessments:
+            lines.append("")
+            lines.append("COMPLIANCE:")
+            for assessment in self.compliance_assessments:
+                lines.append(f"  {assessment.summary()}")
         return "\n".join(lines)
 
     def export_json(self, path: str) -> None:
@@ -155,6 +162,10 @@ class Evaluator:
                 )
             )
 
+        compliance_assessments = (
+            ComplianceMapper().map(findings, frameworks) if frameworks else []
+        )
+
         report = EvaluationReport(
             target=self.target.url,
             model=target_model,
@@ -163,7 +174,8 @@ class Evaluator:
             findings=findings,
             compliance_frameworks=frameworks,
             elapsed_seconds=round(time.time() - t0, 1),
-            timestamp=datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            timestamp=datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            compliance_assessments=compliance_assessments,
         )
 
         if verbose:

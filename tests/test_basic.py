@@ -119,5 +119,8 @@ def test_evaluator_mock_run():
     )
     assert report.total_attacks > 0
     assert len(report.findings) == report.total_attacks
+    assert len(report.compliance_assessments) == 1
+    assert report.compliance_assessments[0].framework == "eu_ai_act"
     summary = report.severity_summary()
     assert "VULNERABILITY ASSESSMENT" in summary
+    assert "COMPLIANCE" in summary
