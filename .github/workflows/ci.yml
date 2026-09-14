@@ -22,8 +22,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install package (no optional deps)
-        run: pip install -e ".[dev]"
+      - name: Install package with CI dependencies
+        run: pip install -e ".[dev,api]"
 
       - name: Run tests
         run: pytest tests/ -v
