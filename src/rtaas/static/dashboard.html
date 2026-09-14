@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RTaaS Dashboard</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #161923;
+    --border: #262b3a;
+    --text: #e6e8ef;
+    --muted: #9aa0b4;
+    --accent: #6ea8fe;
+    --critical: #ff5d5d;
+    --high: #ff9f43;
+    --medium: #f6c744;
+    --low: #7ed0a6;
+    --pass: #4c5266;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px;
+  }
+  h1 { font-size: 1.4rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin-bottom: 24px; font-size: 0.9rem; }
+  .grid { display: grid; grid-template-columns: 360px 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .panel h2 { font-size: 1rem; margin: 0 0 14px; }
+  label { display: block; font-size: 0.8rem; color: var(--muted); margin: 10px 0 4px; }
+  input, select {
+    width: 100%;
+    padding: 8px 10px;
+    background: #0d0f16;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 0.9rem;
+  }
+  button {
+    margin-top: 16px;
+    width: 100%;
+    padding: 10px;
+    background: var(--accent);
+    color: #0d0f16;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.5; cursor: wait; }
+  #status { margin-top: 10px; font-size: 0.85rem; color: var(--muted); white-space: pre-wrap; }
+  .run-list { list-style: none; margin: 0; padding: 0; }
+  .run-list li {
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .run-list li:hover { background: #1d2130; }
+  .run-list li.active { background: #1d2130; color: var(--text); }
+  .bars { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 20px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; }
+  .bar-label { width: 80px; color: var(--muted); }
+  .bar-track { flex: 1; background: #0d0f16; border-radius: 4px; height: 14px; overflow: hidden; }
+  .bar-fill { height: 100%; }
+  .bar-count { width: 40px; text-align: right; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 8px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 500; }
+  .sev { padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; color: #0d0f16; }
+  .compliance { margin-top: 20px; }
+  .compliance .status { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+  .status-PASS { background: var(--low); color: #0d0f16; }
+  .status-PARTIAL { background: var(--medium); color: #0d0f16; }
+  .status-FAIL { background: var(--critical); color: #0d0f16; }
+  .empty { color: var(--muted); font-size: 0.9rem; padding: 20px; text-align: center; }
+</style>
+</head>
+<body>
+  <h1>RTaaS Dashboard</h1>
+  <div class="sub">Automated adversarial testing for LLMs — run an evaluation and inspect results.</div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>New Evaluation</h2>
+      <form id="evalForm">
+        <label>Target URL</label>
+        <input name="target_url" placeholder="http://mock.local/v1/chat/completions" value="http://mock.local/v1/chat/completions" required>
+
+        <label>Target Model</label>
+        <input name="target_model" placeholder="gpt-4o-mini" value="mock-model">
+
+        <label>Attack Profile</label>
+        <select name="profile">
+          <option value="general_basic">general_basic</option>
+          <option value="financial_basic">financial_basic</option>
+          <option value="financial_comprehensive">financial_comprehensive</option>
+          <option value="medical_basic">medical_basic</option>
+          <option value="jailbreak_comprehensive">jailbreak_comprehensive</option>
+        </select>
+
+        <label>Max Attacks</label>
+        <input name="max_attacks" type="number" value="20" min="1" max="500">
+
+        <label>Compliance Frameworks (comma-separated)</label>
+        <input name="compliance_frameworks" value="eu_ai_act,nist_ai_rmf">
+
+        <button type="submit" id="runBtn">Run Evaluation</button>
+      </form>
+      <div id="status"></div>
+
+      <h2 style="margin-top:24px;">Past Runs</h2>
+      <ul class="run-list" id="runList"><li class="empty">No runs yet</li></ul>
+    </div>
+
+    <div class="panel" id="resultsPanel">
+      <div class="empty">Run an evaluation or select a past run to see results.</div>
+    </div>
+  </div>
+
+<script>
+const sevColor = { CRITICAL: "var(--critical)", HIGH: "var(--high)", MEDIUM: "var(--medium)", LOW: "var(--low)", PASS: "var(--pass)" };
+
+async function fetchJSON(url, opts) {
+  const res = await fetch(url, opts);
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}: ${await res.text()}`);
+  return res.json();
+}
+
+async function refreshRunList(selectAfter) {
+  const list = document.getElementById("runList");
+  try {
+    const runs = await fetchJSON("/reports");
+    if (!runs.length) { list.innerHTML = '<li class="empty">No runs yet</li>'; return; }
+    list.innerHTML = "";
+    runs.reverse().forEach(r => {
+      const li = document.createElement("li");
+      li.textContent = `${r.timestamp}  ${r.model}  (${r.failures}/${r.total_attacks} failed)`;
+      li.dataset.runId = r.run_id;
+      li.onclick = () => showRun(r.run_id);
+      list.appendChild(li);
+    });
+    if (selectAfter) showRun(selectAfter);
+  } catch (e) {
+    list.innerHTML = `<li class="empty">Failed to load runs: ${e.message}</li>`;
+  }
+}
+
+function renderSeverityBars(counts, total) {
+  const order = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "PASS"];
+  return `<div class="bars">${order.map(sev => {
+    const count = counts[sev] || 0;
+    const pct = total ? (count / total * 100) : 0;
+    return `<div class="bar-row">
+      <span class="bar-label">${sev}</span>
+      <span class="bar-track"><span class="bar-fill" style="width:${pct}%;background:${sevColor[sev]}"></span></span>
+      <span class="bar-count">${count}</span>
+    </div>`;
+  }).join("")}</div>`;
+}
+
+function renderCompliance(assessments) {
+  if (!assessments || !assessments.length) return "";
+  return `<div class="compliance"><h2>Compliance</h2>${assessments.map(a => `
+    <div style="margin-bottom:12px;">
+      <strong>${a.framework}</strong> <span class="status status-${a.overall_status}">${a.overall_status}</span>
+      <table>
+        <thead><tr><th>Reference</th><th>Severity</th><th>Finding</th></tr></thead>
+        <tbody>
+          ${a.gaps.map(g => `<tr><td>${g.reference}</td><td><span class="sev" style="background:${sevColor[g.severity]}">${g.severity}</span></td><td>${g.description}</td></tr>`).join("") || '<tr><td colspan="3">No gaps</td></tr>'}
+        </tbody>
+      </table>
+    </div>`).join("")}</div>`;
+}
+
+async function showRun(runId) {
+  document.querySelectorAll("#runList li").forEach(li => li.classList.toggle("active", li.dataset.runId === runId));
+  const panel = document.getElementById("resultsPanel");
+  panel.innerHTML = '<div class="empty">Loading…</div>';
+  try {
+    const report = await fetchJSON(`/reports/${runId}`);
+    const counts = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0, PASS: 0 };
+    report.findings.forEach(f => counts[f.severity] = (counts[f.severity] || 0) + 1);
+
+    panel.innerHTML = `
+      <h2>${report.model} — ${report.profile}</h2>
+      <div class="sub">${report.target} · ${report.timestamp} · ${report.total_attacks} attacks · ${report.elapsed_seconds}s</div>
+      ${renderSeverityBars(counts, report.total_attacks)}
+      <table>
+        <thead><tr><th>Attack</th><th>Severity</th><th>Harm Label</th><th>Confidence</th><th>Response</th></tr></thead>
+        <tbody>
+          ${report.findings.map(f => `<tr>
+            <td>${f.attack_id}</td>
+            <td><span class="sev" style="background:${sevColor[f.severity]}">${f.severity}</span></td>
+            <td>${f.harm_label}</td>
+            <td>${(f.harm_confidence * 100).toFixed(0)}%</td>
+            <td>${(f.response || "").slice(0, 80)}${(f.response || "").length > 80 ? "…" : ""}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>
+      ${renderCompliance(report.compliance_assessments)}
+    `;
+  } catch (e) {
+    panel.innerHTML = `<div class="empty">Failed to load report: ${e.message}</div>`;
+  }
+}
+
+document.getElementById("evalForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById("runBtn");
+  const status = document.getElementById("status");
+  const data = new FormData(e.target);
+  const payload = {
+    target_url: data.get("target_url"),
+    target_model: data.get("target_model"),
+    profile: data.get("profile"),
+    max_attacks: parseInt(data.get("max_attacks"), 10),
+    compliance_frameworks: data.get("compliance_frameworks").split(",").map(s => s.trim()).filter(Boolean),
+  };
+  btn.disabled = true;
+  status.textContent = "Running evaluation…";
+  try {
+    const result = await fetchJSON("/evaluate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    status.textContent = `Done — run ${result.run_id}`;
+    await refreshRunList(result.run_id);
+  } catch (err) {
+    status.textContent = `Error: ${err.message}`;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+refreshRunList();
+</script>
+</body>
+</html>

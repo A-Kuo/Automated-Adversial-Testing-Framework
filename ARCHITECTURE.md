@@ -3,6 +3,19 @@
 **Version:** 0.1 (Concept)  
 **Date:** April 10, 2026
 
+> **Implementation status:** This document describes the target architecture,
+> not the current state of the code. As of this writing, **implemented**:
+> the core attack → eval → score loop, the seed attack library, a heuristic
+> harm classifier, the EU AI Act / NIST AI RMF compliance mapper (wired into
+> the evaluation pipeline), JSON report export, and a minimal single-process
+> FastAPI REST API + static dashboard (`src/rtaas/api.py`,
+> `src/rtaas/static/dashboard.html`) — no job queue, no auth, no database.
+> **Not implemented:** the Celery/Redis job orchestrator, dynamic mutation
+> engine, entropy scorer, factual verifier, LlamaGuard-3 integration, PDF
+> report generation, continuous monitoring mode, and the full infrastructure
+> stack (Kubernetes, PostgreSQL, S3/GCS, Grafana/Prometheus) described below.
+> See `README.md`'s Roadmap for exact status.
+
 ---
 
 ## System Overview

@@ -4,10 +4,14 @@
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Status: Research/Concept](https://img.shields.io/badge/status-research--concept-orange.svg)]()
+[![Status: Pre-Alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)]()
 [![EU AI Act](https://img.shields.io/badge/compliance-EU_AI_Act-purple.svg)]()
 
-**Status:** Research concept and architecture design. Core evaluation engine and attack library are being developed.  
+**Status:** Pre-alpha. The core evaluation loop, seed attack library, heuristic
+harm classifier, compliance mapper, JSON reporting, and a minimal REST API +
+dashboard are implemented and tested. Entropy/hallucination scoring,
+LlamaGuard integration, PDF export, and the dynamic mutation engine are not
+yet built — see the Roadmap below for exact status.  
 **Rooted in:** [AI-Safety-Benchmarking-RedTeam-Framework](https://github.com/A-Kuo/AI-Safety-Benchmarking-RedTeam-Framework) and [Language-Model-Hallucination-Detection-via-Entropy-Divergence](https://github.com/A-Kuo/Language-Model-Hallucination-Detection-via-Entropy-Divergence)
 
 ---
@@ -89,8 +93,20 @@ report = evaluator.run(
 )
 
 print(report.severity_summary())
-report.export_pdf("compliance_report.pdf")
+report.export_json("compliance_report.json")
 ```
+
+### REST API + Dashboard
+
+```bash
+pip install -e ".[dev,api]"
+uvicorn rtaas.api:app --reload
+```
+
+Then open `http://localhost:8000` for a minimal dashboard: kick off an
+evaluation, watch past runs, and inspect severity distribution and
+compliance gaps for a selected run. `POST /evaluate`, `GET /reports`, and
+`GET /reports/{run_id}` are also usable directly.
 
 ---
 
@@ -152,51 +168,52 @@ rtaas/
 ├── src/rtaas/
 │   ├── __init__.py
 │   ├── cli.py                    # CLI entry point
+│   ├── api.py                    # Minimal FastAPI REST API + dashboard route
 │   ├── evaluator.py              # Main evaluation orchestrator
+│   ├── static/
+│   │   └── dashboard.html        # Single-page results viewer (served by api.py)
 │   ├── attack_engine/
-│   │   ├── library.py            # Static attack library loader (YAML)
-│   │   ├── mutation.py           # LLM-vs-LLM mutation engine
+│   │   ├── library.py            # Attack library (hardcoded seed list; YAML loading path exists but unused)
 │   │   └── coverage.py           # Coverage metric tracker
 │   ├── eval_engine/
-│   │   ├── target.py             # Target model interface (OpenAI, HF, local)
-│   │   ├── harm_classifier.py    # Harm scoring (LlamaGuard-3)
-│   │   ├── entropy_scorer.py     # AED-based hallucination risk scoring
-│   │   └── factual_verifier.py   # Ground-truth fact checking
-│   ├── compliance/
-│   │   ├── mapper.py             # Finding → regulatory framework mapping
-│   │   └── frameworks/           # YAML configs: eu_ai_act.yml, nist_ai_rmf.yml, ...
-│   └── reporting/
-│       ├── generator.py          # Report builder
-│       └── templates/            # PDF and JSON templates
-│
-├── attacks/                      # Attack library (YAML files)
-│   ├── financial/
-│   ├── medical/
-│   ├── legal/
-│   └── jailbreak/
+│   │   ├── target.py             # Target model interface (OpenAI-compatible)
+│   │   └── harm_classifier.py    # Heuristic harm scoring (LlamaGuard-3 path stubbed)
+│   └── compliance/
+│       └── mapper.py             # Finding → regulatory framework mapping (EU AI Act, NIST AI RMF)
 │
 ├── tests/
-├── ARCHITECTURE.md               # Full system architecture
+├── ARCHITECTURE.md               # Full (partly aspirational) system architecture
 ├── RESEARCH_QUESTIONS.md         # Open research questions
 ├── BUSINESS_CASE.md              # Market analysis and commercialization strategy
+├── CONTRIBUTING.md               # Dev setup and contribution guide
+├── .env.example                  # Environment variables (OPENAI_API_KEY)
 └── pyproject.toml
 ```
+
+Not yet implemented (see Roadmap): `attack_engine/mutation.py`,
+`eval_engine/entropy_scorer.py`, `eval_engine/factual_verifier.py`,
+`compliance/frameworks/*.yml`, `reporting/` (PDF/JSON templates), and the
+`attacks/` YAML directory.
 
 ---
 
 ## Roadmap
 
-- [ ] Core evaluation loop (target interface → attack → score)
-- [ ] Static attack library: financial and jailbreak profiles
-- [ ] Harm classifier integration (LlamaGuard-3)
-- [ ] AED entropy scorer integration
-- [ ] EU AI Act compliance mapper
-- [ ] JSON report output
+- [x] Core evaluation loop (target interface → attack → score)
+- [x] Static attack library: financial, medical, and jailbreak seed attacks
+      (hardcoded seed list; YAML-file loading is wired but no `attacks/`
+      directory exists yet)
+- [ ] Harm classifier integration (LlamaGuard-3) — heuristic keyword
+      classifier only; LlamaGuard path is a stub (`NotImplementedError`)
+- [ ] AED entropy scorer integration — not implemented
+- [x] EU AI Act / NIST AI RMF compliance mapper (wired into `Evaluator.run()`)
+- [x] JSON report output
 - [ ] PDF report generation
 - [ ] Dynamic mutation engine (LLM-vs-LLM)
 - [ ] Continuous monitoring mode
-- [ ] REST API (FastAPI)
-- [ ] Python SDK
+- [x] Minimal REST API (FastAPI) + static dashboard — single-process,
+      in-memory only; no queue/worker, no persistence
+- [ ] Python SDK (beyond the `Evaluator`/`AttackProfile` library import)
 
 ---
 

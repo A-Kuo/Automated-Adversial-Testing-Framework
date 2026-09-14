@@ -10,9 +10,10 @@ from __future__ import annotations
 import enum
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 
-class AttackProfile(str, enum.Enum):
+class AttackProfile(enum.StrEnum):
     GENERAL_BASIC = "general_basic"
     FINANCIAL_BASIC = "financial_basic"
     FINANCIAL_COMPREHENSIVE = "financial_comprehensive"
@@ -36,7 +37,7 @@ class Attack:
 # Hardcoded seed attacks (bootstrap; real library uses YAML files)
 # ---------------------------------------------------------------------------
 
-_SEED_ATTACKS: list[dict] = [
+_SEED_ATTACKS: list[dict[str, Any]] = [
     # --- General jailbreak ---
     {
         "attack_id": "JB_001",

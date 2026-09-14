@@ -42,7 +42,7 @@ class CoverageTracker:
             if self._tested[c] == 0 or (self._failed[c] / self._tested[c]) < 0.1
         ]
 
-    def summary(self) -> dict:
+    def summary(self) -> dict[str, object]:
         return {
             "coverage": round(self.coverage, 3),
             "categories_tested": len(self._tested),
